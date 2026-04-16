@@ -19,59 +19,69 @@ Hooks.once("ready", () => {
 });
 
 Hooks.on("getSceneControlButtons", (controls) => {
-  controls.push({
+  const tools = {
+    catalog: {
+      name: "catalog",
+      title: "Каталог карточек",
+      icon: "fas fa-book-open",
+      order: 0,
+      button: true,
+      visible: true,
+      onClick: () => new KriptaCatalogApp().render(true)
+    },
+    "get-card": {
+      name: "get-card",
+      title: "Получить карточку",
+      icon: "fas fa-hand-holding-medical",
+      order: 1,
+      button: true,
+      visible: true,
+      onClick: () => {
+        const binding = getBinding(game.user.id);
+        if (!binding?.guid) return notifyWarn(game.i18n.localize("KRIPTA.NoBinding"));
+        new KriptaRequestCardDialog({
+          playerGuid: binding.guid,
+          ownerFoundryUserId: game.user.id
+        }).render(true);
+      }
+    },
+    "my-cards": {
+      name: "my-cards",
+      title: "Мои карточки",
+      icon: "fas fa-images",
+      order: 2,
+      button: true,
+      visible: true,
+      onClick: () => {
+        const binding = getBinding(game.user.id);
+        if (!binding?.guid) return notifyWarn(game.i18n.localize("KRIPTA.NoBinding"));
+        new KriptaMyCardsApp({
+          playerGuid: binding.guid,
+          playerName: game.user.name,
+          ownerFoundryUserId: game.user.id
+        }).render(true);
+      }
+    },
+    players: {
+      name: "players",
+      title: "Управление игроками",
+      icon: "fas fa-users-cog",
+      order: 3,
+      button: true,
+      visible: game.user.isGM,
+      onClick: () => new KriptaPlayersApp().render(true)
+    }
+  };
+
+  controls[MODULE_ID] = {
     name: MODULE_ID,
     title: "Карточки крипты",
     icon: "fas fa-id-card",
-    layer: "tokens",
+    order: 90,
+    activeTool: "catalog",
     visible: true,
-    tools: [
-      {
-        name: "catalog",
-        title: "Каталог карточек",
-        icon: "fas fa-book-open",
-        button: true,
-        onClick: () => new KriptaCatalogApp().render(true)
-      },
-      {
-        name: "get-card",
-        title: "Получить карточку",
-        icon: "fas fa-hand-holding-medical",
-        button: true,
-        onClick: () => {
-          const binding = getBinding(game.user.id);
-          if (!binding?.guid) return notifyWarn(game.i18n.localize("KRIPTA.NoBinding"));
-          new KriptaRequestCardDialog({
-            playerGuid: binding.guid,
-            ownerFoundryUserId: game.user.id
-          }).render(true);
-        }
-      },
-      {
-        name: "my-cards",
-        title: "Мои карточки",
-        icon: "fas fa-images",
-        button: true,
-        onClick: () => {
-          const binding = getBinding(game.user.id);
-          if (!binding?.guid) return notifyWarn(game.i18n.localize("KRIPTA.NoBinding"));
-          new KriptaMyCardsApp({
-            playerGuid: binding.guid,
-            playerName: game.user.name,
-            ownerFoundryUserId: game.user.id
-          }).render(true);
-        }
-      },
-      {
-        name: "players",
-        title: "Управление игроками",
-        icon: "fas fa-users-cog",
-        button: true,
-        visible: game.user.isGM,
-        onClick: () => new KriptaPlayersApp().render(true)
-      }
-    ]
-  });
+    tools
+  };
 });
 
 Hooks.on("renderChatMessage", (message, html) => {
