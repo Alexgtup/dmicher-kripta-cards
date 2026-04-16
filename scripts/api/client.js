@@ -3,13 +3,21 @@ import { getServerUrl, getTechUsers, objectWithoutUndefined } from "../helpers/u
 import { normalizeCardMeta, normalizeCardsList, normalizeLevels, normalizePlayersInfo, normalizePlayersList, normalizeRollCard } from "./normalizers.js";
 
 export class KriptaApiClient {
-  static buildHeaders(role, extra = {}) {
-    const users = getTechUsers();
-    const auth = users?.[role] ?? { id: "", key: "" };
-    const basic = auth.id || auth.key ? btoa(`${auth.id}:${auth.key}`) : "";
+  static buildHeaders(role, extra = {}, { useAuth = true } = {}) {
     const headers = {
       Accept: "application/json, text/plain, */*",
       "Content-Type": "application/json",
+      ...extra
+    };
+
+    if (!useAuth) return objectWithoutUndefined(headers);
+
+    const users = getTechUsers();
+    const auth = users?.[role] ?? { id: "", key: "" };
+    const basic = auth.id || auth.key ? btoa(`${auth.id}:${auth.key}`) : "";
+
+    return objectWithoutUndefined({
+      ...headers,
       Authorization: basic ? `Basic ${basic}` : "",
       Id: auth.id ?? "",
       Key: auth.key ?? "",
@@ -18,10 +26,8 @@ export class KriptaApiClient {
       "X-Auth-Id": auth.id ?? "",
       "X-Auth-Key": auth.key ?? "",
       "X-User-Id": auth.id ?? "",
-      "X-User-Key": auth.key ?? "",
-      ...extra
-    };
-    return objectWithoutUndefined(headers);
+      "X-User-Key": auth.key ?? ""
+    });
   }
 
   static buildUrl(path, query = null) {
@@ -37,11 +43,11 @@ export class KriptaApiClient {
     return url.toString();
   }
 
-  static async request(role, path, { method = "GET", body, query, binary = false, headers = {} } = {}) {
+  static async request(role, path, { method = "GET", body, query, binary = false, headers = {}, useAuth = true } = {}) {
     const response = await fetch(this.buildUrl(path, query), {
       method,
       mode: "cors",
-      headers: this.buildHeaders(role, headers),
+      headers: this.buildHeaders(role, headers, { useAuth }),
       body: body !== undefined ? JSON.stringify(body) : undefined
     });
 
@@ -70,15 +76,27 @@ export class KriptaApiClient {
   }
 
   static async healthCheck() {
-    return this.request(ROLES.READER, "/api/Health/check", { method: "GET", headers: { "Content-Type": undefined } });
+    return this.request(ROLES.READER, "/api/Health/check", {
+      method: "GET",
+      headers: { "Content-Type": undefined },
+      useAuth: false
+    });
   }
 
   static async checkMe() {
-    return this.request(ROLES.READER, "/api/Health/check-me", { method: "GET", headers: { "Content-Type": undefined } });
+    return this.request(ROLES.READER, "/api/Health/check-me", {
+      method: "GET",
+      headers: { "Content-Type": undefined }
+    });
   }
 
   static async getLevelsList() {
-    return normalizeLevels(await this.request(ROLES.READER, "/api/Cards/getLevelsList", { method: "GET", headers: { "Content-Type": undefined } }));
+    return normalizeLevels(
+      await this.request(ROLES.READER, "/api/Cards/getLevelsList", {
+        method: "GET",
+        headers: { "Content-Type": undefined }
+      })
+    );
   }
 
   static async getCardsList(level, search = "") {
@@ -94,19 +112,40 @@ export class KriptaApiClient {
       Name: search,
       name: search
     });
-    return normalizeCardsList(await this.request(ROLES.READER, "/api/Cards/getCardsList", { method: "POST", body }), level);
+    return normalizeCardsList(
+      await this.request(ROLES.READER, "/api/Cards/getCardsList", {
+        method: "POST",
+        body
+      }),
+      level
+    );
   }
 
   static async getCardMeta(level, number) {
-    return normalizeCardMeta(await this.request(ROLES.READER, `/api/Cards/getCardMeta/${level}/${number}`, { method: "GET", headers: { "Content-Type": undefined } }), { level, number });
+    return normalizeCardMeta(
+      await this.request(ROLES.READER, `/api/Cards/getCardMeta/${level}/${number}`, {
+        method: "GET",
+        headers: { "Content-Type": undefined }
+      }),
+      { level, number }
+    );
   }
 
   static async getCardImageBlob(level, number) {
-    return this.request(ROLES.READER, `/api/Cards/getCardImage/${level}/${number}`, { method: "GET", binary: true, headers: { "Content-Type": undefined } });
+    return this.request(ROLES.READER, `/api/Cards/getCardImage/${level}/${number}`, {
+      method: "GET",
+      binary: true,
+      headers: { "Content-Type": undefined }
+    });
   }
 
   static async getPlayersList() {
-    return normalizePlayersList(await this.request(ROLES.WRITER, "/api/PlayersCards/getPlayersList", { method: "GET", headers: { "Content-Type": undefined } }));
+    return normalizePlayersList(
+      await this.request(ROLES.WRITER, "/api/PlayersCards/getPlayersList", {
+        method: "GET",
+        headers: { "Content-Type": undefined }
+      })
+    );
   }
 
   static async getPlayersInfo(guids) {
@@ -121,7 +160,12 @@ export class KriptaApiClient {
       Ids: uniqueGuids,
       ids: uniqueGuids
     };
-    return normalizePlayersInfo(await this.request(ROLES.READER, "/api/PlayersCards/getPlayersInfo", { method: "POST", body }));
+    return normalizePlayersInfo(
+      await this.request(ROLES.READER, "/api/PlayersCards/getPlayersInfo", {
+        method: "POST",
+        body
+      })
+    );
   }
 
   static async addPlayer(name, comment = "") {
@@ -131,7 +175,10 @@ export class KriptaApiClient {
       Comment: comment,
       comment
     });
-    return this.request(ROLES.WRITER, "/api/PlayersCards/addPlayer", { method: "POST", body });
+    return this.request(ROLES.WRITER, "/api/PlayersCards/addPlayer", {
+      method: "POST",
+      body
+    });
   }
 
   static async updatePlayer(guid, name, comment = "") {
@@ -145,7 +192,10 @@ export class KriptaApiClient {
       Comment: comment,
       comment
     });
-    return this.request(ROLES.WRITER, "/api/PlayersCards/updatePlayer", { method: "POST", body });
+    return this.request(ROLES.WRITER, "/api/PlayersCards/updatePlayer", {
+      method: "POST",
+      body
+    });
   }
 
   static async deletePlayer(guid) {
@@ -155,7 +205,10 @@ export class KriptaApiClient {
       Id: guid,
       id: guid
     });
-    return this.request(ROLES.WRITER, "/api/PlayersCards/deletePlayer", { method: "DELETE", body });
+    return this.request(ROLES.WRITER, "/api/PlayersCards/deletePlayer", {
+      method: "DELETE",
+      body
+    });
   }
 
   static async rollCard(level) {
@@ -165,7 +218,13 @@ export class KriptaApiClient {
       LevelId: level,
       levelId: level
     });
-    return normalizeRollCard(await this.request(ROLES.READER, "/api/PlayersCards/rollCard", { method: "POST", body }), level);
+    return normalizeRollCard(
+      await this.request(ROLES.READER, "/api/PlayersCards/rollCard", {
+        method: "POST",
+        body
+      }),
+      level
+    );
   }
 
   static async giveCard(playerGuid, level, number, count = 1) {
@@ -183,7 +242,10 @@ export class KriptaApiClient {
       Amount: count,
       amount: count
     });
-    return this.request(ROLES.WRITER, "/api/PlayersCards/giveCard", { method: "POST", body });
+    return this.request(ROLES.WRITER, "/api/PlayersCards/giveCard", {
+      method: "POST",
+      body
+    });
   }
 
   static async takeCard(playerGuid, level, number, count = 1) {
@@ -201,7 +263,10 @@ export class KriptaApiClient {
       Amount: count,
       amount: count
     });
-    return this.request(ROLES.WRITER, "/api/PlayersCards/takeCard", { method: "POST", body });
+    return this.request(ROLES.WRITER, "/api/PlayersCards/takeCard", {
+      method: "POST",
+      body
+    });
   }
 
   static async testWriterAccess() {
