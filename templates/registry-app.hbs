@@ -1,0 +1,27 @@
+<div class="kripta-table-wrap">
+  <table class="kripta-grid">
+    <thead>
+      <tr>
+        <th>Имя</th>
+        <th>Комментарий</th>
+        <th>Типов карточек</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each players}}
+      <tr data-player-guid="{{guid}}" class="{{#if isSelected}}is-selected{{/if}}">
+        <td>{{name}}</td>
+        <td>{{comment}}</td>
+        <td>{{cardsCount}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</div>
+
+<footer class="sheet-footer flexrow">
+  <button type="button" data-action="add">Добавить</button>
+  <button type="button" data-action="edit" {{#unless hasPlayers}}disabled{{/unless}}>Изменить</button>
+  <button type="button" data-action="delete" {{#unless hasPlayers}}disabled{{/unless}}>Удалить</button>
+  <button type="button" data-action="refresh">Обновить</button>
+</footer>

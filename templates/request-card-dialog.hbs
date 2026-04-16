@@ -1,0 +1,34 @@
+<form class="kripta-sheet-form">
+  <div class="form-group">
+    <label>Категория</label>
+    <select name="level">
+      {{#each levels}}
+      <option value="{{id}}" {{#if (eq ../selectedLevel id)}}selected{{/if}}>{{name}}</option>
+      {{/each}}
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label>Режим</label>
+    <div class="kripta-radio-row">
+      <label><input type="radio" name="mode" value="random" {{#unless isManual}}checked{{/unless}}> Случайная</label>
+      <label><input type="radio" name="mode" value="manual" {{#if isManual}}checked{{/if}}> На выбор</label>
+    </div>
+  </div>
+
+  {{#if isManual}}
+  <div class="form-group">
+    <label>Карточка</label>
+    <select name="cardNumber">
+      {{#each cards}}
+      <option value="{{number}}" {{#if (eq ../selectedNumber number)}}selected{{/if}}>{{name}}</option>
+      {{/each}}
+    </select>
+  </div>
+  {{/if}}
+
+  <footer class="sheet-footer flexrow">
+    <button type="submit" class="default">Запросить</button>
+    <button type="button" onclick="this.closest('.app').querySelector('.header-button.close')?.click()">Отмена</button>
+  </footer>
+</form>

@@ -1,0 +1,17 @@
+<section class="kripta-card-details">
+  <h2>{{meta.name}}</h2>
+  <div class="notes">{{levelName}}</div>
+  <div class="kripta-html">{{{meta.description}}}</div>
+
+  <div class="kripta-inline-actions">
+    <button type="button" data-action="output">Вывести</button>
+    <button type="button" data-action="request">Запросить</button>
+    {{#if isGM}}<button type="button" data-action="give">Выдать</button>{{/if}}
+  </div>
+
+  {{#if imageUrl}}
+  <div class="kripta-card-details__image-wrap">
+    <img src="{{imageUrl}}" alt="{{meta.name}}" class="kripta-card-details__image">
+  </div>
+  {{/if}}
+</section>

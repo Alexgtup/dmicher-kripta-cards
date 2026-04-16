@@ -1,0 +1,36 @@
+<form class="kripta-sheet-form">
+  <div class="form-group">
+    <label>Путь к серверу</label>
+    <input type="text" name="serverUrl" value="{{serverUrl}}" placeholder="https://kripta-cards-api.example.org">
+  </div>
+
+  <fieldset class="kripta-fieldset">
+    <legend>Писатель (Writer)</legend>
+    <div class="form-group">
+      <label>Id</label>
+      <input type="text" name="writerId" value="{{writerId}}">
+    </div>
+    <div class="form-group">
+      <label>Key</label>
+      <input type="password" name="writerKey" value="{{writerKey}}">
+    </div>
+  </fieldset>
+
+  <fieldset class="kripta-fieldset">
+    <legend>Читатель (Reader)</legend>
+    <div class="form-group">
+      <label>Id</label>
+      <input type="text" name="readerId" value="{{readerId}}">
+    </div>
+    <div class="form-group">
+      <label>Key</label>
+      <input type="password" name="readerKey" value="{{readerKey}}">
+    </div>
+  </fieldset>
+
+  <footer class="sheet-footer flexrow">
+    <button type="button" data-action="test-server"><i class="fas fa-heart-pulse"></i> Проверить сервер</button>
+    <button type="button" data-action="test-auth"><i class="fas fa-user-check"></i> Проверить тех.пользователей</button>
+    <button type="submit" class="default"><i class="fas fa-save"></i> Сохранить изменения</button>
+  </footer>
+</form>

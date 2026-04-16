@@ -1,0 +1,30 @@
+<section class="kripta-players-list">
+  {{#each rows}}
+  <article class="kripta-player-row">
+    <div class="kripta-player-row__head">
+      <div>
+        <h3>{{foundryUserName}}</h3>
+        <div class="notes">{{#if isGM}}мастер{{else}}игрок{{/if}}{{#if active}} · online{{/if}}</div>
+      </div>
+      <span class="kripta-badge">{{cardsCount}}</span>
+    </div>
+    <div class="kripta-player-row__body">
+      <div class="kripta-player-row__binding">
+        <div class="kripta-player-row__server-name">{{#if boundPlayer}}{{boundPlayer.name}}{{else}}не привязан{{/if}}</div>
+        <div class="notes">{{#if boundPlayer}}{{boundPlayer.comment}}{{else}}выберите игрока сервера{{/if}}</div>
+      </div>
+      <div class="kripta-inline-actions">
+        <button type="button" data-action="bind" data-user-id="{{foundryUserId}}">Привязать</button>
+        <button type="button" data-action="unbind" data-user-id="{{foundryUserId}}">Отвязать</button>
+        <button type="button" data-action="open-cards" data-user-id="{{foundryUserId}}">Карточки игрока</button>
+        <button type="button" data-action="give-card" data-user-id="{{foundryUserId}}">Выдать карточку</button>
+      </div>
+    </div>
+  </article>
+  {{/each}}
+</section>
+
+<footer class="sheet-footer flexrow">
+  <button type="button" data-action="refresh">Обновить</button>
+  <button type="button" data-action="registry">Реестр игроков</button>
+</footer>

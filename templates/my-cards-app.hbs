@@ -1,0 +1,66 @@
+{{#if emptyState}}
+<div class="kripta-empty-state">На сервере нет зарегистрированных категорий или карточек.</div>
+{{else}}
+<div class="kripta-browser">
+  <aside class="kripta-browser__sidebar">
+    {{#each levels}}
+    <button type="button" class="kripta-level-button {{#if isActive}}is-active{{/if}}" data-level-id="{{id}}" title="{{description}}">
+      {{name}}
+    </button>
+    {{/each}}
+  </aside>
+
+  <section class="kripta-browser__main">
+    <header class="kripta-browser__header">
+      <div>
+        <h2>Карточки игрока: {{playerName}}</h2>
+        <div class="notes">{{activeLevel.description}}</div>
+      </div>
+      <div class="kripta-browser__toolbar">
+        <input type="text" name="search" value="{{search}}" placeholder="Поиск">
+        <button type="button" data-action="set-view" data-view="table" class="{{#if isTable}}active{{/if}}">Таблица</button>
+        <button type="button" data-action="set-view" data-view="tiles" class="{{#if isTiles}}active{{/if}}">Плитки</button>
+      </div>
+    </header>
+
+    {{#if isTable}}
+    <div class="kripta-table-list">
+      {{#each items}}
+      <article class="kripta-row-card" data-card-key="{{level}}:{{number}}">
+        <div class="kripta-row-card__image">
+          {{#if imageUrl}}<img src="{{imageUrl}}" alt="{{name}}">{{/if}}
+        </div>
+        <div class="kripta-row-card__content">
+          <h3>{{name}} <span class="kripta-badge">{{count}}</span></h3>
+          <div class="kripta-html">{{{description}}}</div>
+        </div>
+        <div class="kripta-row-card__actions">
+          <button type="button" data-action="use">Использовать</button>
+          <button type="button" data-action="info">Информация</button>
+          {{#if ../isGM}}<button type="button" data-action="take">Забрать</button>{{/if}}
+        </div>
+      </article>
+      {{/each}}
+    </div>
+    {{else}}
+    <div class="kripta-tile-grid">
+      {{#each items}}
+      <article class="kripta-card-tile" data-card-key="{{level}}:{{number}}" title="{{descriptionText}}">
+        <div class="kripta-card-tile__image-wrap">{{#if imageUrl}}<img src="{{imageUrl}}" alt="{{name}}">{{/if}}</div>
+        <div class="kripta-card-tile__name">{{name}}</div>
+        <div class="notes">Количество: {{count}}</div>
+        <div class="kripta-inline-actions">
+          <button type="button" data-action="use">Использовать</button>
+        </div>
+      </article>
+      {{/each}}
+    </div>
+    {{/if}}
+
+    <footer class="sheet-footer flexrow">
+      <button type="button" data-action="refresh">Обновить</button>
+      <button type="button" data-action="request">Получить</button>
+    </footer>
+  </section>
+</div>
+{{/if}}

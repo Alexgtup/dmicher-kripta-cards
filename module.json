@@ -1,0 +1,31 @@
+{
+  "id": "dmicher-kripta-cards",
+  "title": "Карточки Крипты",
+  "description": "Модуль Foundry VTT для работы с сервером карточек.",
+  "version": "0.2.0",
+  "authors": [
+    { "name": "dmicher abathur kubrow" }
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "14"
+  },
+  "esmodules": [
+    "scripts/module.js"
+  ],
+  "styles": [
+    "styles/module.css"
+  ],
+  "languages": [
+    {
+      "lang": "ru",
+      "name": "Русский",
+      "path": "lang/ru.json"
+    }
+  ],
+  "manifest": "https://github.com/Alexgtup/dmicher-kripta-cards/releases/latest/download/module.json",
+  "download": "https://github.com/Alexgtup/dmicher-kripta-cards/releases/latest/download/dmicher-kripta-cards.zip",
+  "url": "https://github.com/Alexgtup/dmicher-kripta-cards",
+  "bugs": "https://github.com/Alexgtup/dmicher-kripta-cards/issues",
+  "readme": "https://github.com/Alexgtup/dmicher-kripta-cards#readme"
+}

@@ -1,0 +1,237 @@
+.dmicher-kripta-cards .kripta-sheet-form,
+.dmicher-kripta-cards .kripta-inline-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dmicher-kripta-cards .kripta-fieldset {
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.dmicher-kripta-cards .kripta-browser {
+  display: grid;
+  grid-template-columns: minmax(200px, 22%) 1fr;
+  gap: 0.75rem;
+  min-height: 520px;
+}
+
+.dmicher-kripta-cards .kripta-browser__sidebar {
+  border-right: 1px solid var(--color-border-light-primary);
+  padding-right: 0.5rem;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.dmicher-kripta-cards .kripta-browser__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.dmicher-kripta-cards .kripta-browser__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.dmicher-kripta-cards .kripta-browser__toolbar {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.dmicher-kripta-cards .kripta-level-button {
+  width: 100%;
+  text-align: left;
+}
+
+.dmicher-kripta-cards .kripta-level-button.is-active {
+  box-shadow: 0 0 0 2px var(--color-shadow-primary);
+}
+
+.dmicher-kripta-cards .kripta-table-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow: auto;
+}
+
+.dmicher-kripta-cards .kripta-row-card {
+  display: grid;
+  grid-template-columns: 100px 1fr minmax(170px, 200px);
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 8px;
+}
+
+.dmicher-kripta-cards .kripta-row-card:hover {
+  background: rgba(255,255,255,0.04);
+}
+
+.dmicher-kripta-cards .kripta-row-card__image {
+  width: 100px;
+  height: 100px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.12);
+}
+
+.dmicher-kripta-cards .kripta-row-card__image img,
+.dmicher-kripta-cards .kripta-card-tile__image-wrap img,
+.dmicher-kripta-cards .kripta-card-details__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dmicher-kripta-cards .kripta-row-card__actions,
+.dmicher-kripta-cards .kripta-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-content: flex-start;
+}
+
+.dmicher-kripta-cards .kripta-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.75rem;
+  overflow: auto;
+}
+
+.dmicher-kripta-cards .kripta-card-tile {
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 8px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.dmicher-kripta-cards .kripta-card-tile__image-wrap {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.12);
+}
+
+.dmicher-kripta-cards .kripta-card-tile__name {
+  font-weight: 600;
+}
+
+.dmicher-kripta-cards .kripta-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.12);
+  padding: 0 0.45rem;
+}
+
+.dmicher-kripta-cards .kripta-player-row {
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.dmicher-kripta-cards .kripta-player-row__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.dmicher-kripta-cards .kripta-player-row__body {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.dmicher-kripta-cards .kripta-table-wrap {
+  overflow: auto;
+  min-height: 420px;
+}
+
+.dmicher-kripta-cards .kripta-grid {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dmicher-kripta-cards .kripta-grid th,
+.dmicher-kripta-cards .kripta-grid td {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--color-border-light-primary);
+}
+
+.dmicher-kripta-cards .kripta-grid tr.is-selected {
+  outline: 2px solid var(--color-shadow-primary);
+}
+
+.dmicher-kripta-cards .kripta-card-details__image-wrap {
+  margin-top: 1rem;
+  max-width: 500px;
+  max-height: 500px;
+  margin-inline: auto;
+}
+
+.dmicher-kripta-cards .kripta-empty-state,
+.dmicher-kripta-cards .kripta-danger-note,
+.dmicher-kripta-cards .kripta-spent-note {
+  padding: 0.75rem;
+  border-radius: 8px;
+}
+
+.dmicher-kripta-cards .kripta-spent-note {
+  color: #d44;
+  font-weight: 700;
+  text-align: center;
+}
+
+.kripta-chat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.kripta-chat-card__title {
+  font-weight: 700;
+}
+
+.kripta-chat-card__subtitle {
+  opacity: 0.8;
+}
+
+.kripta-chat-card__image-wrap {
+  max-width: 320px;
+}
+
+.kripta-chat-card__image {
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+
+.kripta-chat-card__actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.kripta-chat-button.is-confirm {
+  font-weight: 600;
+}

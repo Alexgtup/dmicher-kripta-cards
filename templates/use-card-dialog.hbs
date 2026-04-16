@@ -1,0 +1,16 @@
+<form class="kripta-sheet-form">
+  <p>Выбрана карточка для использования: <strong>{{meta.name}}</strong>.</p>
+
+  <div class="form-group">
+    <label>Режим</label>
+    <div class="kripta-radio-row">
+      <label><input type="radio" name="mode" value="spend" checked> Потратить</label>
+      <label><input type="radio" name="mode" value="show"> Показать</label>
+    </div>
+  </div>
+
+  <footer class="sheet-footer flexrow">
+    <button type="submit" class="default">Да</button>
+    <button type="button" onclick="this.closest('.app').querySelector('.header-button.close')?.click()">Нет</button>
+  </footer>
+</form>
