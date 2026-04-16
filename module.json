@@ -2,9 +2,11 @@
   "id": "dmicher-kripta-cards",
   "title": "Карточки Крипты",
   "description": "Модуль Foundry VTT для работы с сервером карточек.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "authors": [
-    { "name": "dmicher abathur kubrow" }
+    {
+      "name": "Alex / OpenAI scaffold"
+    }
   ],
   "compatibility": {
     "minimum": "13",
