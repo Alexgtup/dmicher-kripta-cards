@@ -64,44 +64,91 @@ export class KriptaRequestCardDialog extends FormApplication {
 
   async _updateObject(_event, formData) {
     const data = foundry.utils.expandObject(formData);
-    try {
-      const level = Number(data.level);
-      let picked = null;
 
-      if (data.mode === "manual") {
-        const number = Number(data.cardNumber);
-        picked = await KriptaApiClient.getCardMeta(level, number);
-      } else {
-        picked = await KriptaApiClient.rollCard(level);
-      }
+    const selectedLevel = Number(
+      data.level ??
+      data.category ??
+      this.level ??
+      this.selectedLevel ??
+      0
+    );
 
-      const [levels, imageBlob] = await Promise.all([
-        this.levels.length ? this.levels : KriptaApiClient.getLevelsList(),
-        KriptaApiClient.getCardImageBlob(picked.level, picked.number).catch(() => null)
-      ]);
+    const mode = String(
+      data.mode ??
+      data.requestMode ??
+      "random"
+    );
 
-      const imageUrl = imageBlob ? URL.createObjectURL(imageBlob) : "";
-      const levelName = levels.find((item) => item.id === picked.level)?.name ?? String(picked.level);
-      const title = data.mode === "manual"
-        ? `Выбрана карта: ${picked.name} (${levelName})`
-        : `Случайная карта: ${picked.name} (${levelName})`;
+    let playerGuid =
+      this.options.playerGuid ??
+      this.playerGuid ??
+      "00000000-0000-0000-0000-000000000000";
 
-      await createCardRequestMessage({
-        playerGuid: this.playerGuid,
-        ownerFoundryUserId: this.ownerFoundryUserId,
-        level: picked.level,
-        number: picked.number,
-        playerName: game.users.get(this.ownerFoundryUserId)?.name ?? game.user.name,
-        title,
-        levelName,
-        imageUrl,
-        description: picked.description,
-        speakerUser: game.user
-      });
+    const ownerFoundryUserId =
+      this.options.ownerFoundryUserId ??
+      this.ownerFoundryUserId ??
+      game.user.id;
 
-      notifyInfo("Запрос карточки отправлен в чат.");
-    } catch (error) {
-      notifyError(error, "Не удалось отправить запрос карточки");
+    if (!playerGuid || playerGuid === "00000000-0000-0000-0000-000000000000") {
+      const bindings = game.settings.get("dmicher-kripta-cards", "playerBindings") ?? {};
+      playerGuid =
+        bindings?.[ownerFoundryUserId]?.guid ??
+        bindings?.[ownerFoundryUserId]?.playerGuid ??
+        "00000000-0000-0000-0000-000000000000";
     }
+
+    let chosenCard = null;
+
+    if (mode === "choice") {
+      const selectedCardValue = String(
+        data.card ??
+        data.number ??
+        data.selectedCard ??
+        ""
+      ).trim();
+
+      const cards = await KriptaApiClient.getCardsList(selectedLevel, "");
+
+      chosenCard =
+        cards.find((c) => String(c.number) === selectedCardValue) ||
+        cards.find((c) => c.name === selectedCardValue) ||
+        cards.find((c) => `${c.level}:${c.number}` === selectedCardValue) ||
+        null;
+
+      if (!chosenCard) {
+        return ui.notifications.warn("Не удалось определить выбранную карточку.");
+      }
+    } else {
+      chosenCard = await KriptaApiClient.rollCard(selectedLevel);
+    }
+
+    if (!chosenCard) {
+      return ui.notifications.warn("Не удалось получить карточку.");
+    }
+
+    let imageUrl = "";
+    try {
+      const blob = await KriptaApiClient.getCardImageBlob(chosenCard.level, chosenCard.number);
+      imageUrl = URL.createObjectURL(blob);
+    } catch (_error) {
+      imageUrl = "";
+    }
+
+    await createCardRequestMessage({
+      playerGuid,
+      ownerFoundryUserId,
+      level: chosenCard.level,
+      number: chosenCard.number,
+      playerName: game.users.get(ownerFoundryUserId)?.name ?? game.user.name,
+      title: mode === "choice"
+        ? `Выбрана карта: ${chosenCard.name}`
+        : `Случайная карта: ${chosenCard.name}`,
+      levelName: chosenCard.levelName ?? "",
+      imageUrl,
+      description: chosenCard.description ?? "",
+      speakerUser: game.user
+    });
+
+    ui.notifications.info("Запрос карточки отправлен в чат.");
   }
 }
