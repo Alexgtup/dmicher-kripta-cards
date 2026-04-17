@@ -223,58 +223,60 @@ export class KriptaApiClient {
   }
 
   static async giveCard(playerGuid, level, number, count = 1) {
-    const body = objectWithoutUndefined({
-      Player: playerGuid,
+    const query = objectWithoutUndefined({
       player: playerGuid,
-      PlayerGuid: playerGuid,
-      playerGuid,
-      Guid: playerGuid,
+      Player: playerGuid,
       guid: playerGuid,
-      Id: playerGuid,
+      Guid: playerGuid,
       id: playerGuid,
-      Level: level,
+      Id: playerGuid,
+      playerGuid: playerGuid,
+      PlayerGuid: playerGuid,
       level,
-      Card: number,
+      Level: level,
       card: number,
-      Number: number,
+      Card: number,
       number,
-      Count: count,
+      Number: number,
       count,
-      Amount: count,
-      amount: count
+      Count: count,
+      amount: count,
+      Amount: count
     });
 
     return this.request(ROLES.WRITER, "/api/PlayersCards/giveCard", {
       method: "POST",
-      body
+      query,
+      headers: { "Content-Type": undefined }
     });
   }
 
   static async takeCard(playerGuid, level, number, count = 1) {
-    const body = objectWithoutUndefined({
-      Player: playerGuid,
+    const query = objectWithoutUndefined({
       player: playerGuid,
-      PlayerGuid: playerGuid,
-      playerGuid,
-      Guid: playerGuid,
+      Player: playerGuid,
       guid: playerGuid,
-      Id: playerGuid,
+      Guid: playerGuid,
       id: playerGuid,
-      Level: level,
+      Id: playerGuid,
+      playerGuid: playerGuid,
+      PlayerGuid: playerGuid,
       level,
-      Card: number,
+      Level: level,
       card: number,
-      Number: number,
+      Card: number,
       number,
-      Count: count,
+      Number: number,
       count,
-      Amount: count,
-      amount: count
+      Count: count,
+      amount: count,
+      Amount: count
     });
 
     return this.request(ROLES.WRITER, "/api/PlayersCards/takeCard", {
       method: "POST",
-      body
+      query,
+      headers: { "Content-Type": undefined }
     });
   }
 
