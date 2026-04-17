@@ -54,15 +54,15 @@ export class KriptaMyCardsApp extends Application {
 
     const player = infoList[0] ?? { playerCards: [] };
 
-    console.log("KRIPTA myCards raw player", player);
-    console.log("KRIPTA myCards raw playerCards", player.playerCards);
+    console.log("KRIPTA myCards raw player JSON", JSON.stringify(player, null, 2));
+    console.log("KRIPTA myCards raw playerCards JSON", JSON.stringify(player.playerCards, null, 2));
 
     const rawCards = Array.isArray(player.playerCards) ? player.playerCards : [];
     const validCards = rawCards.filter(isValidOwnedCard);
     const invalidCards = rawCards.filter((card) => !isValidOwnedCard(card));
 
     if (invalidCards.length) {
-      console.warn("KRIPTA myCards invalid cards filtered", invalidCards);
+      console.warn("KRIPTA myCards invalid cards filtered JSON", JSON.stringify(invalidCards, null, 2));
     }
 
     const groupedCards = validCards.reduce((map, card) => {
