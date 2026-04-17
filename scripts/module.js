@@ -8,16 +8,57 @@ import { KriptaPlayersApp } from "./apps/players-app.js";
 import { KriptaRequestCardDialog } from "./apps/request-card-dialog.js";
 import { registerSettings } from "./settings.js";
 
-function resolvePlayerGuid(foundryUserId, explicitGuid = "") {
-  const zeroGuid = "00000000-0000-0000-0000-000000000000";
+const ZERO_GUID = "00000000-0000-0000-0000-000000000000";
 
-  if (explicitGuid && explicitGuid !== zeroGuid) return explicitGuid;
+function normalizeGuidCandidate(value) {
+  if (!value) return "";
+  const stringValue = String(value).trim();
+  if (!stringValue || stringValue === ZERO_GUID) return "";
+  return stringValue;
+}
 
+function getPlayerGuidFromBinding(foundryUserId) {
   const binding = getBinding(foundryUserId);
-  if (binding?.guid && binding.guid !== zeroGuid) return binding.guid;
-  if (binding?.playerGuid && binding.playerGuid !== zeroGuid) return binding.playerGuid;
+  return (
+    normalizeGuidCandidate(binding?.guid) ||
+    normalizeGuidCandidate(binding?.playerGuid) ||
+    normalizeGuidCandidate(binding?.id) ||
+    ""
+  );
+}
 
-  return zeroGuid;
+async function resolvePlayerGuid(payload) {
+  const explicitGuid =
+    normalizeGuidCandidate(payload?.playerGuid) ||
+    normalizeGuidCandidate(payload?.guid) ||
+    normalizeGuidCandidate(payload?.id);
+
+  if (explicitGuid) return explicitGuid;
+
+  const bindingGuid = getPlayerGuidFromBinding(payload?.ownerFoundryUserId);
+  if (bindingGuid) return bindingGuid;
+
+  const ownerUser = game.users.get(payload?.ownerFoundryUserId);
+  const ownerName = String(
+    payload?.playerName ??
+    ownerUser?.name ??
+    ""
+  ).trim().toLowerCase();
+
+  if (!ownerName) return "";
+
+  const players = await KriptaApiClient.getPlayersList();
+  const matched = players.find((player) => {
+    const playerName = String(player?.name ?? "").trim().toLowerCase();
+    return playerName === ownerName;
+  });
+
+  return (
+    normalizeGuidCandidate(matched?.guid) ||
+    normalizeGuidCandidate(matched?.playerGuid) ||
+    normalizeGuidCandidate(matched?.id) ||
+    ""
+  );
 }
 
 Hooks.once("init", () => {
@@ -120,14 +161,9 @@ Hooks.on("renderChatMessage", (message, html) => {
     }
 
     try {
-      const zeroGuid = "00000000-0000-0000-0000-000000000000";
+      const resolvedPlayerGuid = await resolvePlayerGuid(payload);
 
-      const resolvedPlayerGuid = resolvePlayerGuid(
-        payload.ownerFoundryUserId,
-        payload.playerGuid
-      );
-
-      if (!resolvedPlayerGuid || resolvedPlayerGuid === zeroGuid) {
+      if (!resolvedPlayerGuid) {
         throw new Error("Не удалось определить playerGuid для выдачи карточки.");
       }
 
@@ -151,7 +187,7 @@ Hooks.on("renderChatMessage", (message, html) => {
       const levelName = levels.find((item) => item.id === payload.level)?.name ?? String(payload.level);
 
       await createKriptaChatMessage({
-        title: `Игрок ${ownerUser?.name ?? "Игрок"} получает карточку ${meta.name} (${levelName})`,
+        title: `Игрок ${ownerUser?.name ?? payload.playerName ?? "Игрок"} получает карточку ${meta.name} (${levelName})`,
         imageUrl,
         description: meta.description,
         speakerUser: game.user
