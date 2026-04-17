@@ -17,9 +17,10 @@ function arrayFromUnknown(value) {
 }
 
 function ensureArray(value) {
+  if (Array.isArray(value)) return value;
   const arr = arrayFromUnknown(value);
   if (arr.length) return arr;
-  if (value && typeof value === "object") return [value];
+  if (value && typeof value === "object" && !Array.isArray(value)) return [value];
   return [];
 }
 
