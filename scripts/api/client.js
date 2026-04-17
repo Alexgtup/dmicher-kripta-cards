@@ -9,6 +9,24 @@ import {
   normalizeRollCard
 } from "./normalizers.js";
 
+function assertValidCardAddress(level, number, context = "card request") {
+  const normalizedLevel = Number(level);
+  const normalizedNumber = Number(number);
+
+  if (!Number.isInteger(normalizedLevel) || normalizedLevel < 0) {
+    throw new Error(`Некорректный level для ${context}: ${level}`);
+  }
+
+  if (!Number.isInteger(normalizedNumber) || normalizedNumber <= 0) {
+    throw new Error(`Некорректный number для ${context}: ${number}`);
+  }
+
+  return {
+    level: normalizedLevel,
+    number: normalizedNumber
+  };
+}
+
 export class KriptaApiClient {
   static buildHeaders(role, extra = {}, { useAuth = true } = {}) {
     const headers = {
@@ -132,17 +150,21 @@ export class KriptaApiClient {
   }
 
   static async getCardMeta(level, number) {
+    const addr = assertValidCardAddress(level, number, "getCardMeta");
+
     return normalizeCardMeta(
-      await this.request(ROLES.READER, `/api/Cards/getCardMeta/${level}/${number}`, {
+      await this.request(ROLES.READER, `/api/Cards/getCardMeta/${addr.level}/${addr.number}`, {
         method: "GET",
         headers: { "Content-Type": undefined }
       }),
-      { level, number }
+      addr
     );
   }
 
   static async getCardImageBlob(level, number) {
-    return this.request(ROLES.READER, `/api/Cards/getCardImage/${level}/${number}`, {
+    const addr = assertValidCardAddress(level, number, "getCardImage");
+
+    return this.request(ROLES.READER, `/api/Cards/getCardImage/${addr.level}/${addr.number}`, {
       method: "GET",
       binary: true,
       headers: { "Content-Type": undefined }
@@ -163,7 +185,8 @@ export class KriptaApiClient {
 
     const raw = await this.request(ROLES.READER, "/api/PlayersCards/getPlayersInfo", {
       method: "POST",
-      body: {
+      body: uniqueGuids,
+      query: {
         players: uniqueGuids
       }
     });
@@ -237,6 +260,8 @@ export class KriptaApiClient {
   }
 
   static async giveCard(playerGuid, level, number, count = 1) {
+    const addr = assertValidCardAddress(level, number, "giveCard");
+
     const query = objectWithoutUndefined({
       player: playerGuid,
       Player: playerGuid,
@@ -246,12 +271,12 @@ export class KriptaApiClient {
       Id: playerGuid,
       playerGuid,
       PlayerGuid: playerGuid,
-      level,
-      Level: level,
-      card: number,
-      Card: number,
-      number,
-      Number: number,
+      level: addr.level,
+      Level: addr.level,
+      card: addr.number,
+      Card: addr.number,
+      number: addr.number,
+      Number: addr.number,
       count,
       Count: count,
       amount: count,
@@ -266,6 +291,8 @@ export class KriptaApiClient {
   }
 
   static async takeCard(playerGuid, level, number, count = 1) {
+    const addr = assertValidCardAddress(level, number, "takeCard");
+
     const query = objectWithoutUndefined({
       player: playerGuid,
       Player: playerGuid,
@@ -275,12 +302,12 @@ export class KriptaApiClient {
       Id: playerGuid,
       playerGuid,
       PlayerGuid: playerGuid,
-      level,
-      Level: level,
-      card: number,
-      Card: number,
-      number,
-      Number: number,
+      level: addr.level,
+      Level: addr.level,
+      card: addr.number,
+      Card: addr.number,
+      number: addr.number,
+      Number: addr.number,
       count,
       Count: count,
       amount: count,
