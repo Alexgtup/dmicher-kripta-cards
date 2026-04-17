@@ -6,6 +6,16 @@ import { KriptaRequestCardDialog } from "./request-card-dialog.js";
 import { KriptaUseCardDialog } from "./use-card-dialog.js";
 import { getUiPrefs, notifyError, notifyInfo, setUiPref, stripHtml } from "../helpers/utils.js";
 
+function isValidOwnedCard(card) {
+  const level = Number(card?.level);
+  const number = Number(card?.number);
+  const count = Number(card?.count ?? 1);
+
+  return Number.isInteger(level) && level >= 0 &&
+    Number.isInteger(number) && number > 0 &&
+    Number.isFinite(count) && count > 0;
+}
+
 export class KriptaMyCardsApp extends Application {
   constructor(options = {}) {
     super(options);
@@ -36,29 +46,57 @@ export class KriptaMyCardsApp extends Application {
       KriptaApiClient.getLevelsList(),
       KriptaApiClient.getPlayersInfo([this.playerGuid])
     ]);
+
     this.levels = levels;
     if (!this.levels.length) return { emptyState: true };
 
     if (this.selectedLevel === null) this.selectedLevel = this.levels[0].id;
 
     const player = infoList[0] ?? { playerCards: [] };
-    const groupedCards = player.playerCards.reduce((map, card) => {
+
+    console.log("KRIPTA myCards raw player", player);
+    console.log("KRIPTA myCards raw playerCards", player.playerCards);
+
+    const rawCards = Array.isArray(player.playerCards) ? player.playerCards : [];
+    const validCards = rawCards.filter(isValidOwnedCard);
+    const invalidCards = rawCards.filter((card) => !isValidOwnedCard(card));
+
+    if (invalidCards.length) {
+      console.warn("KRIPTA myCards invalid cards filtered", invalidCards);
+    }
+
+    const groupedCards = validCards.reduce((map, card) => {
       const key = `${card.level}:${card.number}`;
-      if (!map.has(key)) map.set(key, { level: card.level, number: card.number, count: 0 });
+      if (!map.has(key)) {
+        map.set(key, {
+          level: Number(card.level),
+          number: Number(card.number),
+          count: 0
+        });
+      }
       map.get(key).count += Number(card.count ?? 1);
       return map;
     }, new Map());
 
     const list = [...groupedCards.values()].filter((item) => item.level === this.selectedLevel);
-    const metaList = await Promise.all(list.map((item) => KriptaApiClient.getCardMeta(item.level, item.number).catch(() => ({
-      level: item.level,
-      number: item.number,
-      name: `Карточка ${item.number}`,
-      description: ""
-    }))));
-    const imageBlobs = await Promise.all(list.map((item) => KriptaApiClient.getCardImageBlob(item.level, item.number).catch(() => null)));
+
+    const metaList = await Promise.all(
+      list.map((item) =>
+        KriptaApiClient.getCardMeta(item.level, item.number).catch(() => ({
+          level: item.level,
+          number: item.number,
+          name: `Карточка ${item.number}`,
+          description: ""
+        }))
+      )
+    );
+
+    const imageBlobs = await Promise.all(
+      list.map((item) => KriptaApiClient.getCardImageBlob(item.level, item.number).catch(() => null))
+    );
 
     const searchLower = this.search.trim().toLowerCase();
+
     this.items = list.map((item, index) => ({
       ...item,
       ...metaList[index],
@@ -115,6 +153,7 @@ export class KriptaMyCardsApp extends Application {
     html.find('[data-action="use"]').on("click", (event) => {
       const item = this._findItem(event);
       if (!item) return;
+
       new KriptaUseCardDialog({
         playerGuid: this.playerGuid,
         playerName: this.playerName,
@@ -134,13 +173,16 @@ export class KriptaMyCardsApp extends Application {
     html.find('[data-action="take"]').on("click", async (event) => {
       const item = this._findItem(event);
       if (!item) return;
+
       const count = await countPromptDialog({
         title: "Забрать карточку",
         message: `Игрок ${this.playerName} будет лишён карточки ${item.name}.`,
         max: item.count,
         defaultValue: 1
       });
+
       if (!count) return;
+
       try {
         await KriptaApiClient.takeCard(this.playerGuid, item.level, item.number, count);
         notifyInfo("Карточка списана.");
@@ -151,16 +193,16 @@ export class KriptaMyCardsApp extends Application {
     });
 
     html.find('.kripta-card-tile').on("click", (event) => {
-      if ($(event.target).closest('button').length) return;
-      const cardKey = event.currentTarget.closest('[data-card-key]')?.dataset?.cardKey;
+      if ($(event.target).closest("button").length) return;
+      const cardKey = event.currentTarget.closest("[data-card-key]")?.dataset?.cardKey;
       if (!cardKey) return;
-      const [level, number] = cardKey.split(':').map(Number);
+      const [level, number] = cardKey.split(":").map(Number);
       new KriptaCardDetailsApp({ level, number }).render(true);
     });
   }
 
   _findItem(event) {
-    const cardKey = event.currentTarget.closest('[data-card-key]')?.dataset?.cardKey;
+    const cardKey = event.currentTarget.closest("[data-card-key]")?.dataset?.cardKey;
     return this.items.find((item) => `${item.level}:${item.number}` === cardKey);
   }
 }
