@@ -13,7 +13,7 @@ export function getActionPayloadFromElement(element) {
 
 export function createActionButtonHtml(action, decision, label, payload, cssClass = "") {
   const encodedPayload = encodeURIComponent(JSON.stringify(payload));
-  return `<button type="button" class="kripta-chat-button ${cssClass}".trim() data-kripta-action="${action}" data-kripta-decision="${decision}" data-payload="${encodedPayload}">${escapeHtml(label)}</button>`;
+  return `<button type="button" class="kripta-chat-button ${cssClass}" data-kripta-action="${action}" data-kripta-decision="${decision}" data-payload="${encodedPayload}">${escapeHtml(label)}</button>`;
 }
 
 export async function createKriptaChatMessage({
@@ -46,7 +46,7 @@ export async function createKriptaChatMessage({
     user: game.user.id,
     speaker,
     whisper: whisperRecipients,
-    type: CONST.CHAT_MESSAGE_STYLES.OTHER,
+    style: CONST.CHAT_MESSAGE_STYLES.OTHER,
     rollMode,
     content,
     flags: {
