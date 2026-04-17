@@ -39,11 +39,7 @@ async function resolvePlayerGuid(payload) {
   if (bindingGuid) return bindingGuid;
 
   const ownerUser = game.users.get(payload?.ownerFoundryUserId);
-  const ownerName = String(
-    payload?.playerName ??
-    ownerUser?.name ??
-    ""
-  ).trim().toLowerCase();
+  const ownerName = String(payload?.playerName ?? ownerUser?.name ?? "").trim().toLowerCase();
 
   if (!ownerName) return "";
 
@@ -68,7 +64,8 @@ Hooks.once("init", () => {
 });
 
 Hooks.once("ready", () => {
-  game.modules.get(MODULE_ID).api = { KriptaApiClient };
+  const module = game.modules.get(MODULE_ID);
+  if (module) module.api = { KriptaApiClient };
 });
 
 Hooks.on("getSceneControlButtons", (controls) => {
@@ -80,7 +77,9 @@ Hooks.on("getSceneControlButtons", (controls) => {
       order: 0,
       button: true,
       visible: true,
-      onClick: () => new KriptaCatalogApp().render(true)
+      onChange: () => {
+        new KriptaCatalogApp().render(true);
+      }
     },
     "get-card": {
       name: "get-card",
@@ -89,11 +88,17 @@ Hooks.on("getSceneControlButtons", (controls) => {
       order: 1,
       button: true,
       visible: true,
-      onClick: () => {
+      onChange: () => {
         const binding = getBinding(game.user.id);
-        if (!binding?.guid) return notifyWarn(game.i18n.localize("KRIPTA.NoBinding"));
+        const playerGuid = binding?.guid ?? binding?.playerGuid ?? "";
+
+        if (!playerGuid) {
+          notifyWarn(game.i18n.localize("KRIPTA.NoBinding"));
+          return;
+        }
+
         new KriptaRequestCardDialog({
-          playerGuid: binding.guid,
+          playerGuid,
           ownerFoundryUserId: game.user.id
         }).render(true);
       }
@@ -105,11 +110,17 @@ Hooks.on("getSceneControlButtons", (controls) => {
       order: 2,
       button: true,
       visible: true,
-      onClick: () => {
+      onChange: () => {
         const binding = getBinding(game.user.id);
-        if (!binding?.guid) return notifyWarn(game.i18n.localize("KRIPTA.NoBinding"));
+        const playerGuid = binding?.guid ?? binding?.playerGuid ?? "";
+
+        if (!playerGuid) {
+          notifyWarn(game.i18n.localize("KRIPTA.NoBinding"));
+          return;
+        }
+
         new KriptaMyCardsApp({
-          playerGuid: binding.guid,
+          playerGuid,
           playerName: game.user.name,
           ownerFoundryUserId: game.user.id
         }).render(true);
@@ -122,7 +133,9 @@ Hooks.on("getSceneControlButtons", (controls) => {
       order: 3,
       button: true,
       visible: game.user.isGM,
-      onClick: () => new KriptaPlayersApp().render(true)
+      onChange: () => {
+        new KriptaPlayersApp().render(true);
+      }
     }
   };
 
@@ -137,65 +150,77 @@ Hooks.on("getSceneControlButtons", (controls) => {
   };
 });
 
-Hooks.on("renderChatMessage", (message, html) => {
-  html.find("[data-kripta-action]").each((_index, element) => {
-    const $element = $(element);
-    if (!game.user.isGM) $element.hide();
-  });
+Hooks.on("renderChatMessageHTML", (message, html) => {
+  const actionButtons = html.querySelectorAll("[data-kripta-action]");
 
-  html.find("[data-kripta-action]").on("click", async (event) => {
-    event.preventDefault();
-    if (!game.user.isGM) return notifyWarn(game.i18n.localize("KRIPTA.GMOnly"));
-
-    const action = event.currentTarget.dataset.kriptaAction;
-    if (action !== CHAT_ACTIONS.REQUEST_CARD) return;
-
-    const payload = getActionPayloadFromElement(event.currentTarget);
-    const decision = event.currentTarget.dataset.kriptaDecision;
-    if (!payload) return notifyWarn("Не удалось прочитать данные запроса.");
-
-    if (decision === "cancel") {
-      await message.delete();
-      notifyInfo("Запрос карточки отменен.");
-      return;
+  for (const element of actionButtons) {
+    if (!game.user.isGM) {
+      element.style.display = "none";
     }
 
-    try {
-      const resolvedPlayerGuid = await resolvePlayerGuid(payload);
+    element.addEventListener("click", async (event) => {
+      event.preventDefault();
 
-      if (!resolvedPlayerGuid) {
-        throw new Error("Не удалось определить playerGuid для выдачи карточки.");
+      if (!game.user.isGM) {
+        notifyWarn(game.i18n.localize("KRIPTA.GMOnly"));
+        return;
       }
 
-      await KriptaApiClient.giveCard(
-        resolvedPlayerGuid,
-        payload.level,
-        payload.number,
-        1
-      );
+      const target = event.currentTarget;
+      const action = target.dataset.kriptaAction;
+      if (action !== CHAT_ACTIONS.REQUEST_CARD) return;
 
-      await message.delete();
+      const payload = getActionPayloadFromElement(target);
+      const decision = target.dataset.kriptaDecision;
 
-      const [meta, levels, blob] = await Promise.all([
-        KriptaApiClient.getCardMeta(payload.level, payload.number),
-        KriptaApiClient.getLevelsList(),
-        KriptaApiClient.getCardImageBlob(payload.level, payload.number).catch(() => null)
-      ]);
+      if (!payload) {
+        notifyWarn("Не удалось прочитать данные запроса.");
+        return;
+      }
 
-      const imageUrl = blob ? URL.createObjectURL(blob) : "";
-      const ownerUser = game.users.get(payload.ownerFoundryUserId);
-      const levelName = levels.find((item) => item.id === payload.level)?.name ?? String(payload.level);
+      if (decision === "cancel") {
+        await message.delete();
+        notifyInfo("Запрос карточки отменен.");
+        return;
+      }
 
-      await createKriptaChatMessage({
-        title: `Игрок ${ownerUser?.name ?? payload.playerName ?? "Игрок"} получает карточку ${meta.name} (${levelName})`,
-        imageUrl,
-        description: meta.description,
-        speakerUser: game.user
-      });
+      try {
+        const resolvedPlayerGuid = await resolvePlayerGuid(payload);
 
-      notifyInfo("Карточка выдана.");
-    } catch (error) {
-      notifyError(error, "Не удалось подтвердить выдачу карточки");
-    }
-  });
+        if (!resolvedPlayerGuid) {
+          throw new Error("Не удалось определить playerGuid для выдачи карточки.");
+        }
+
+        await KriptaApiClient.giveCard(
+          resolvedPlayerGuid,
+          payload.level,
+          payload.number,
+          1
+        );
+
+        await message.delete();
+
+        const [meta, levels, blob] = await Promise.all([
+          KriptaApiClient.getCardMeta(payload.level, payload.number),
+          KriptaApiClient.getLevelsList(),
+          KriptaApiClient.getCardImageBlob(payload.level, payload.number).catch(() => null)
+        ]);
+
+        const imageUrl = blob ? URL.createObjectURL(blob) : "";
+        const ownerUser = game.users.get(payload.ownerFoundryUserId);
+        const levelName = levels.find((item) => item.id === payload.level)?.name ?? String(payload.level);
+
+        await createKriptaChatMessage({
+          title: `игрок ${ownerUser?.name ?? payload.playerName ?? "игрок"} получает карточку ${meta.name} (${levelName})`,
+          imageUrl,
+          description: meta.description,
+          speakerUser: game.user
+        });
+
+        notifyInfo("Карточка выдана.");
+      } catch (error) {
+        notifyError(error, "Не удалось подтвердить выдачу карточки");
+      }
+    });
+  }
 });
