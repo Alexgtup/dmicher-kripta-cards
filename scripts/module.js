@@ -8,6 +8,18 @@ import { KriptaPlayersApp } from "./apps/players-app.js";
 import { KriptaRequestCardDialog } from "./apps/request-card-dialog.js";
 import { registerSettings } from "./settings.js";
 
+function resolvePlayerGuid(foundryUserId, explicitGuid = "") {
+  const zeroGuid = "00000000-0000-0000-0000-000000000000";
+
+  if (explicitGuid && explicitGuid !== zeroGuid) return explicitGuid;
+
+  const binding = getBinding(foundryUserId);
+  if (binding?.guid && binding.guid !== zeroGuid) return binding.guid;
+  if (binding?.playerGuid && binding.playerGuid !== zeroGuid) return binding.playerGuid;
+
+  return zeroGuid;
+}
+
 Hooks.once("init", () => {
   registerSettings();
   Handlebars.registerHelper("eq", (a, b) => a === b);
@@ -85,12 +97,12 @@ Hooks.on("getSceneControlButtons", (controls) => {
 });
 
 Hooks.on("renderChatMessage", (message, html) => {
-  html.find('[data-kripta-action]').each((_index, element) => {
+  html.find("[data-kripta-action]").each((_index, element) => {
     const $element = $(element);
     if (!game.user.isGM) $element.hide();
   });
 
-  html.find('[data-kripta-action]').on("click", async (event) => {
+  html.find("[data-kripta-action]").on("click", async (event) => {
     event.preventDefault();
     if (!game.user.isGM) return notifyWarn(game.i18n.localize("KRIPTA.GMOnly"));
 
@@ -108,20 +120,14 @@ Hooks.on("renderChatMessage", (message, html) => {
     }
 
     try {
-      const ZERO_GUID = "00000000-0000-0000-0000-000000000000";
+      const zeroGuid = "00000000-0000-0000-0000-000000000000";
 
-      const bindings = game.settings.get("dmicher-kripta-cards", "playerBindings") ?? {};
+      const resolvedPlayerGuid = resolvePlayerGuid(
+        payload.ownerFoundryUserId,
+        payload.playerGuid
+      );
 
-      const resolvedPlayerGuid =
-        payload.playerGuid && payload.playerGuid !== ZERO_GUID
-          ? payload.playerGuid
-          : (
-              bindings?.[payload.ownerFoundryUserId]?.guid ??
-              bindings?.[payload.ownerFoundryUserId]?.playerGuid ??
-              ZERO_GUID
-            );
-
-      if (!resolvedPlayerGuid || resolvedPlayerGuid === ZERO_GUID) {
+      if (!resolvedPlayerGuid || resolvedPlayerGuid === zeroGuid) {
         throw new Error("Не удалось определить playerGuid для выдачи карточки.");
       }
 
@@ -131,6 +137,7 @@ Hooks.on("renderChatMessage", (message, html) => {
         payload.number,
         1
       );
+
       await message.delete();
 
       const [meta, levels, blob] = await Promise.all([
@@ -138,6 +145,7 @@ Hooks.on("renderChatMessage", (message, html) => {
         KriptaApiClient.getLevelsList(),
         KriptaApiClient.getCardImageBlob(payload.level, payload.number).catch(() => null)
       ]);
+
       const imageUrl = blob ? URL.createObjectURL(blob) : "";
       const ownerUser = game.users.get(payload.ownerFoundryUserId);
       const levelName = levels.find((item) => item.id === payload.level)?.name ?? String(payload.level);
