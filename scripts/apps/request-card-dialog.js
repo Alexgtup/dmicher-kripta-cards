@@ -3,6 +3,16 @@ import { MODULE_ID, TEMPLATE_ROOT } from "../constants.js";
 import { createCardRequestMessage } from "../helpers/chat.js";
 import { getBinding, notifyInfo } from "../helpers/utils.js";
 
+function isValidCard(card) {
+  return !!card && Number(card.level) >= 0 && Number(card.number) > 0;
+}
+
+function pickRandomCard(cards) {
+  if (!Array.isArray(cards) || !cards.length) return null;
+  const index = Math.floor(Math.random() * cards.length);
+  return cards[index] ?? null;
+}
+
 export class KriptaRequestCardDialog extends FormApplication {
   constructor(options = {}) {
     super(options);
@@ -139,9 +149,14 @@ export class KriptaRequestCardDialog extends FormApplication {
       chosenCard = await KriptaApiClient.getCardMeta(selectedLevel, selectedNumber);
     } else {
       chosenCard = await KriptaApiClient.rollCard(selectedLevel);
+
+      if (!isValidCard(chosenCard)) {
+        const fallbackCards = await KriptaApiClient.getCardsList(selectedLevel, "");
+        chosenCard = pickRandomCard(fallbackCards);
+      }
     }
 
-    if (!chosenCard) {
+    if (!isValidCard(chosenCard)) {
       ui.notifications.warn("Не удалось получить карточку.");
       return;
     }
@@ -157,9 +172,9 @@ export class KriptaRequestCardDialog extends FormApplication {
     await createCardRequestMessage({
       playerGuid,
       ownerFoundryUserId,
+      playerName: game.users.get(ownerFoundryUserId)?.name ?? game.user.name,
       level: chosenCard.level,
       number: chosenCard.number,
-      playerName: game.users.get(ownerFoundryUserId)?.name ?? game.user.name,
       title: mode === "manual"
         ? `Выбрана карта: ${chosenCard.name}`
         : `Случайная карта: ${chosenCard.name}`,
