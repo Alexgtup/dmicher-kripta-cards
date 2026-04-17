@@ -55,7 +55,7 @@ export class KriptaApiClient {
       let details = "";
       try {
         details = await response.text();
-      } catch (_error) { }
+      } catch (_error) {}
       throw new Error(`API ${response.status}: ${details || response.statusText}`);
     }
 
@@ -112,6 +112,7 @@ export class KriptaApiClient {
       Name: search,
       name: search
     });
+
     return normalizeCardsList(
       await this.request(ROLES.READER, "/api/Cards/getCardsList", {
         method: "POST",
@@ -165,6 +166,7 @@ export class KriptaApiClient {
       Comment: comment,
       comment
     });
+
     return this.request(ROLES.WRITER, "/api/PlayersCards/addPlayer", {
       method: "POST",
       body
@@ -182,6 +184,7 @@ export class KriptaApiClient {
       Comment: comment,
       comment
     });
+
     return this.request(ROLES.WRITER, "/api/PlayersCards/updatePlayer", {
       method: "POST",
       body
@@ -195,6 +198,7 @@ export class KriptaApiClient {
       Id: guid,
       id: guid
     });
+
     return this.request(ROLES.WRITER, "/api/PlayersCards/deletePlayer", {
       method: "DELETE",
       body
@@ -208,6 +212,7 @@ export class KriptaApiClient {
       LevelId: level,
       levelId: level
     });
+
     return normalizeRollCard(
       await this.request(ROLES.READER, "/api/PlayersCards/rollCard", {
         method: "POST",
@@ -219,12 +224,18 @@ export class KriptaApiClient {
 
   static async giveCard(playerGuid, level, number, count = 1) {
     const body = objectWithoutUndefined({
+      Player: playerGuid,
+      player: playerGuid,
       PlayerGuid: playerGuid,
       playerGuid,
       Guid: playerGuid,
       guid: playerGuid,
+      Id: playerGuid,
+      id: playerGuid,
       Level: level,
       level,
+      Card: number,
+      card: number,
       Number: number,
       number,
       Count: count,
@@ -232,6 +243,7 @@ export class KriptaApiClient {
       Amount: count,
       amount: count
     });
+
     return this.request(ROLES.WRITER, "/api/PlayersCards/giveCard", {
       method: "POST",
       body
@@ -240,12 +252,18 @@ export class KriptaApiClient {
 
   static async takeCard(playerGuid, level, number, count = 1) {
     const body = objectWithoutUndefined({
+      Player: playerGuid,
+      player: playerGuid,
       PlayerGuid: playerGuid,
       playerGuid,
       Guid: playerGuid,
       guid: playerGuid,
+      Id: playerGuid,
+      id: playerGuid,
       Level: level,
       level,
+      Card: number,
+      card: number,
       Number: number,
       number,
       Count: count,
@@ -253,6 +271,7 @@ export class KriptaApiClient {
       Amount: count,
       amount: count
     });
+
     return this.request(ROLES.WRITER, "/api/PlayersCards/takeCard", {
       method: "POST",
       body
