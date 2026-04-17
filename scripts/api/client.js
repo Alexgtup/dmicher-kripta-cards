@@ -55,7 +55,7 @@ export class KriptaApiClient {
       let details = "";
       try {
         details = await response.text();
-      } catch (_error) {}
+      } catch (_error) { }
       throw new Error(`API ${response.status}: ${details || response.statusText}`);
     }
 
@@ -150,20 +150,10 @@ export class KriptaApiClient {
 
   static async getPlayersInfo(guids) {
     const uniqueGuids = [...new Set((Array.isArray(guids) ? guids : [guids]).filter(Boolean))];
-    const body = {
-      Guids: uniqueGuids,
-      guids: uniqueGuids,
-      GuidList: uniqueGuids,
-      guidList: uniqueGuids,
-      PlayerGuids: uniqueGuids,
-      playerGuids: uniqueGuids,
-      Ids: uniqueGuids,
-      ids: uniqueGuids
-    };
     return normalizePlayersInfo(
       await this.request(ROLES.READER, "/api/PlayersCards/getPlayersInfo", {
         method: "POST",
-        body
+        body: uniqueGuids
       })
     );
   }
