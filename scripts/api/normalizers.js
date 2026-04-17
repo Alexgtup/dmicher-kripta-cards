@@ -66,6 +66,26 @@ export function normalizePlayersInfo(value) {
 }
 
 export function normalizeRollCard(value, fallbackLevel = 0) {
-  const meta = normalizeCardMeta(value, { level: fallbackLevel });
+  const nestedCandidate =
+    firstOf(value, ["cardMeta", "CardMeta", "card", "Card", "result", "Result", "data", "Data", "value", "Value"], null) ?? value;
+
+  const meta = normalizeCardMeta(nestedCandidate, { level: fallbackLevel });
+
+  if (!meta.level) {
+    meta.level = Number(firstOf(value, ["level", "Level"], fallbackLevel));
+  }
+
+  if (!meta.number) {
+    meta.number = Number(firstOf(value, ["number", "Number", "card", "Card"], 0));
+  }
+
+  if (!meta.name) {
+    meta.name = String(firstOf(value, ["name", "Name"], ""));
+  }
+
+  if (!meta.description) {
+    meta.description = String(firstOf(value, ["description", "Description"], ""));
+  }
+
   return meta;
 }
