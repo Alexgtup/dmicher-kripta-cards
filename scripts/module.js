@@ -108,7 +108,29 @@ Hooks.on("renderChatMessage", (message, html) => {
     }
 
     try {
-      await KriptaApiClient.giveCard(payload.playerGuid, payload.level, payload.number, 1);
+      const ZERO_GUID = "00000000-0000-0000-0000-000000000000";
+
+      const bindings = game.settings.get("dmicher-kripta-cards", "playerBindings") ?? {};
+
+      const resolvedPlayerGuid =
+        payload.playerGuid && payload.playerGuid !== ZERO_GUID
+          ? payload.playerGuid
+          : (
+              bindings?.[payload.ownerFoundryUserId]?.guid ??
+              bindings?.[payload.ownerFoundryUserId]?.playerGuid ??
+              ZERO_GUID
+            );
+
+      if (!resolvedPlayerGuid || resolvedPlayerGuid === ZERO_GUID) {
+        throw new Error("Не удалось определить playerGuid для выдачи карточки.");
+      }
+
+      await KriptaApiClient.giveCard(
+        resolvedPlayerGuid,
+        payload.level,
+        payload.number,
+        1
+      );
       await message.delete();
 
       const [meta, levels, blob] = await Promise.all([
