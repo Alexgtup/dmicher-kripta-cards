@@ -24,11 +24,13 @@ function ensureArray(value) {
 }
 
 export function normalizeLevels(value) {
-  return ensureArray(value).map((item) => ({
-    id: Number(firstOf(item, ["id", "Id", "level", "Level"], 0)),
-    name: String(firstOf(item, ["name", "Name"], "")),
-    description: String(firstOf(item, ["description", "Description"], ""))
-  })).sort((a, b) => a.id - b.id);
+  return ensureArray(value)
+    .map((item) => ({
+      id: Number(firstOf(item, ["id", "Id", "level", "Level"], 0)),
+      name: String(firstOf(item, ["name", "Name"], "")),
+      description: String(firstOf(item, ["description", "Description"], ""))
+    }))
+    .sort((a, b) => a.id - b.id);
 }
 
 export function normalizeCardMeta(value, fallback = {}) {
@@ -51,6 +53,8 @@ export function normalizeCardsList(value, fallbackLevel = null) {
 
 function normalizePlayerCard(item) {
   return {
+    guid: String(firstOf(item, ["guid", "Guid", "id", "Id"], "")),
+    ownerGuid: String(firstOf(item, ["ownerGuid", "OwnerGuid"], "")),
     level: Number(firstOf(item, ["level", "Level", "cardLevel", "CardLevel"], 0)),
     number: Number(firstOf(item, ["number", "Number", "card", "Card", "cardNumber", "CardNumber"], 0)),
     count: Number(firstOf(item, ["count", "Count", "amount", "Amount", "qty", "Qty", "quantity", "Quantity"], 1))
@@ -63,11 +67,21 @@ export function normalizePlayersList(value) {
       firstOf(item, ["player", "Player", "value", "Value"], null) ??
       item;
 
+    const nestedCards =
+      firstOf(item, ["cardDtos", "CardDtos", "playerCards", "PlayerCards", "cards", "Cards"], null) ??
+      firstOf(source, ["cardDtos", "CardDtos", "playerCards", "PlayerCards", "cards", "Cards"], []);
+
     return {
       guid: String(firstOf(source, ["guid", "Guid", "id", "Id"], "")),
       name: String(firstOf(source, ["name", "Name"], "")),
-      comment: String(firstOf(source, ["comment", "Comment"], "")),
-      cardsCount: Number(firstOf(source, ["cardsCount", "CardsCount", "cardsTypesCount", "CardsTypesCount", "cards", "Cards"], 0))
+      comment: String(firstOf(source, ["comment", "Comment", "comments", "Comments"], "")),
+      cardsCount: Number(
+        firstOf(
+          source,
+          ["cardsCount", "CardsCount", "cardsTypesCount", "CardsTypesCount"],
+          ensureArray(nestedCards).length
+        )
+      )
     };
   });
 }
@@ -79,13 +93,47 @@ export function normalizePlayersInfo(value) {
       item;
 
     const nestedCards =
-      firstOf(item, ["playerCards", "PlayerCards", "playersCards", "PlayersCards", "cards", "Cards", "cardsList", "CardsList", "inventory", "Inventory"], null) ??
-      firstOf(source, ["playerCards", "PlayerCards", "playersCards", "PlayersCards", "cards", "Cards", "cardsList", "CardsList", "inventory", "Inventory"], []);
+      firstOf(
+        item,
+        [
+          "cardDtos",
+          "CardDtos",
+          "playerCards",
+          "PlayerCards",
+          "playersCards",
+          "PlayersCards",
+          "cards",
+          "Cards",
+          "cardsList",
+          "CardsList",
+          "inventory",
+          "Inventory"
+        ],
+        null
+      ) ??
+      firstOf(
+        source,
+        [
+          "cardDtos",
+          "CardDtos",
+          "playerCards",
+          "PlayerCards",
+          "playersCards",
+          "PlayersCards",
+          "cards",
+          "Cards",
+          "cardsList",
+          "CardsList",
+          "inventory",
+          "Inventory"
+        ],
+        []
+      );
 
     return {
       guid: String(firstOf(source, ["guid", "Guid", "id", "Id"], "")),
       name: String(firstOf(source, ["name", "Name"], "")),
-      comment: String(firstOf(source, ["comment", "Comment"], "")),
+      comment: String(firstOf(source, ["comment", "Comment", "comments", "Comments"], "")),
       playerCards: ensureArray(nestedCards).map(normalizePlayerCard)
     };
   });
@@ -94,7 +142,7 @@ export function normalizePlayersInfo(value) {
 export function normalizeRollCard(value, fallbackLevel = 0) {
   const meta = normalizeCardMeta(value, { level: fallbackLevel });
 
-  if (!meta.level) {
+  if (!meta.level && meta.level !== 0) {
     meta.level = Number(firstOf(value, ["level", "Level"], fallbackLevel));
   }
 
