@@ -1,12 +1,22 @@
 import { KriptaApiClient } from "../api/client.js";
 import { MODULE_ID, TEMPLATE_ROOT } from "../constants.js";
 import { createKriptaChatMessage } from "../helpers/chat.js";
-import { notifyError, notifyInfo } from "../helpers/utils.js";
+import { getBinding, notifyError, notifyInfo } from "../helpers/utils.js";
+
+function isValidCard(card) {
+  return !!card && Number(card.level) >= 0 && Number(card.number) > 0;
+}
+
+function pickRandomCard(cards) {
+  if (!Array.isArray(cards) || !cards.length) return null;
+  const index = Math.floor(Math.random() * cards.length);
+  return cards[index] ?? null;
+}
 
 export class KriptaGiveCardDialog extends FormApplication {
   constructor(options = {}) {
     super(options);
-    this.playerGuid = options.playerGuid;
+    this.playerGuid = options.playerGuid ?? "";
     this.playerName = options.playerName ?? "";
     this.ownerFoundryUserId = options.ownerFoundryUserId ?? game.user.id;
     this.onComplete = options.onComplete ?? (() => {});
@@ -32,7 +42,11 @@ export class KriptaGiveCardDialog extends FormApplication {
   async getData() {
     this.levels = await KriptaApiClient.getLevelsList();
     const selectedLevel = this.initialLevel ?? this.levels[0]?.id ?? 0;
-    if (this.mode === "manual") this.cards = await KriptaApiClient.getCardsList(selectedLevel, "");
+
+    if (this.mode === "manual") {
+      this.cards = await KriptaApiClient.getCardsList(selectedLevel, "");
+    }
+
     return {
       levels: this.levels,
       cards: this.cards,
@@ -46,13 +60,15 @@ export class KriptaGiveCardDialog extends FormApplication {
     super.activateListeners(html);
 
     html.find('[name="mode"]').on("change", async (event) => {
-      this.mode = event.currentTarget.value;
+      this.mode = String(event.currentTarget.value);
+
       if (this.mode === "manual") {
         const level = Number(html.find('[name="level"]').val());
         this.cards = await KriptaApiClient.getCardsList(level, "");
       } else {
         this.cards = [];
       }
+
       this.render();
     });
 
@@ -66,18 +82,44 @@ export class KriptaGiveCardDialog extends FormApplication {
 
   async _updateObject(_event, formData) {
     const data = foundry.utils.expandObject(formData);
+
     try {
       const level = Number(data.level);
-      const card = data.mode === "manual"
-        ? await KriptaApiClient.getCardMeta(level, Number(data.cardNumber))
-        : await KriptaApiClient.rollCard(level);
+      let playerGuid = this.playerGuid;
 
-      await KriptaApiClient.giveCard(this.playerGuid, card.level, card.number, 1);
+      if (!playerGuid) {
+        const binding = getBinding(this.ownerFoundryUserId);
+        playerGuid = binding?.guid ?? binding?.playerGuid ?? "";
+      }
+
+      let card = null;
+
+      if (data.mode === "manual") {
+        card = await KriptaApiClient.getCardMeta(level, Number(data.cardNumber));
+      } else {
+        card = await KriptaApiClient.rollCard(level);
+
+        if (!isValidCard(card)) {
+          const fallbackCards = await KriptaApiClient.getCardsList(level, "");
+          card = pickRandomCard(fallbackCards);
+        }
+      }
+
+      if (!playerGuid) {
+        throw new Error("Не удалось определить игрока для выдачи карточки.");
+      }
+
+      if (!isValidCard(card)) {
+        throw new Error("Не удалось определить карточку для выдачи.");
+      }
+
+      await KriptaApiClient.giveCard(playerGuid, card.level, card.number, 1);
 
       const [levels, imageBlob] = await Promise.all([
         this.levels.length ? this.levels : KriptaApiClient.getLevelsList(),
         KriptaApiClient.getCardImageBlob(card.level, card.number).catch(() => null)
       ]);
+
       const imageUrl = imageBlob ? URL.createObjectURL(imageBlob) : "";
       const levelName = levels.find((item) => item.id === card.level)?.name ?? String(card.level);
 
