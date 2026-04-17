@@ -1,160 +1,190 @@
 import { escapeHtml } from "../helpers/utils.js";
 
-export async function chooseServerPlayerDialog(players) {
-  return new Promise((resolve) => {
-    const options = players.map((player) => `
-      <option value="${escapeHtml(player.guid)}">${escapeHtml(player.name)}${player.comment ? ` - ${escapeHtml(player.comment)}` : ""}</option>
-    `).join("");
+const { DialogV2 } = foundry.applications.api;
 
-    new Dialog({
-      title: "Привязать игрока сервера",
-      content: `
-        <form class="kripta-inline-form">
-          <div class="form-group">
-            <label>Игрок сервера</label>
-            <select name="guid">${options}</select>
-          </div>
-        </form>
-      `,
-      buttons: {
-        confirm: {
-          label: "Привязать",
-          callback: (html) => resolve(html.find('[name="guid"]').val() || null)
-        },
-        cancel: {
-          label: "Отмена",
-          callback: () => resolve(null)
-        }
+async function waitDialog(config, fallback = null) {
+  try {
+    return await DialogV2.wait({
+      rejectClose: false,
+      modal: true,
+      ...config
+    });
+  } catch (_error) {
+    return fallback;
+  }
+}
+
+export async function chooseServerPlayerDialog(players) {
+  const options = players.map((player) => `
+    <option value="${escapeHtml(player.guid)}">${escapeHtml(player.name)}${player.comment ? ` - ${escapeHtml(player.comment)}` : ""}</option>
+  `).join("");
+
+  return waitDialog({
+    window: {
+      title: "Привязать игрока сервера"
+    },
+    content: `
+      <form class="kripta-inline-form">
+        <div class="form-group">
+          <label>Игрок сервера</label>
+          <select name="guid">${options}</select>
+        </div>
+      </form>
+    `,
+    buttons: [
+      {
+        action: "confirm",
+        label: "Привязать",
+        default: true,
+        callback: (_event, button) => button.form?.elements?.guid?.value || null
       },
-      default: "confirm",
-      close: () => resolve(null)
-    }).render(true);
-  });
+      {
+        action: "cancel",
+        label: "Отмена",
+        callback: () => null
+      }
+    ]
+  }, null);
 }
 
 export async function addEditPlayerDialog(player = null) {
-  return new Promise((resolve) => {
-    new Dialog({
-      title: player ? "Изменить игрока" : "Добавить игрока",
-      content: `
-        <form class="kripta-inline-form">
-          <div class="form-group">
-            <label>Имя</label>
-            <input type="text" name="name" value="${escapeHtml(player?.name ?? "")}">
-          </div>
-          <div class="form-group">
-            <label>Комментарий</label>
-            <input type="text" name="comment" value="${escapeHtml(player?.comment ?? "")}">
-          </div>
-        </form>
-      `,
-      buttons: {
-        confirm: {
-          label: player ? "Изменить" : "Добавить",
-          callback: (html) => resolve({
-            name: String(html.find('[name="name"]').val() ?? "").trim(),
-            comment: String(html.find('[name="comment"]').val() ?? "").trim()
-          })
-        },
-        cancel: {
-          label: "Отмена",
-          callback: () => resolve(null)
-        }
+  return waitDialog({
+    window: {
+      title: player ? "Изменить игрока" : "Добавить игрока"
+    },
+    content: `
+      <form class="kripta-inline-form">
+        <div class="form-group">
+          <label>Имя</label>
+          <input type="text" name="name" value="${escapeHtml(player?.name ?? "")}">
+        </div>
+        <div class="form-group">
+          <label>Комментарий</label>
+          <input type="text" name="comment" value="${escapeHtml(player?.comment ?? "")}">
+        </div>
+      </form>
+    `,
+    buttons: [
+      {
+        action: "confirm",
+        label: player ? "Изменить" : "Добавить",
+        default: true,
+        callback: (_event, button) => ({
+          name: String(button.form?.elements?.name?.value ?? "").trim(),
+          comment: String(button.form?.elements?.comment?.value ?? "").trim()
+        })
       },
-      default: "confirm",
-      close: () => resolve(null)
-    }).render(true);
-  });
+      {
+        action: "cancel",
+        label: "Отмена",
+        callback: () => null
+      }
+    ]
+  }, null);
 }
 
 export async function deletePlayerDialog(player) {
-  return new Promise((resolve) => {
-    const code = String(Math.floor(Math.random() * 100));
-    new Dialog({
-      title: "Удалить игрока",
-      content: `
-        <div class="kripta-danger-note">Удаление игрока необратимо. Введите ${code} и подтвердите удаление.</div>
-        <form class="kripta-inline-form">
-          <div class="form-group">
-            <label>Код подтверждения</label>
-            <input type="text" name="code" value="">
-          </div>
-        </form>
-      `,
-      buttons: {
-        confirm: {
-          label: "Удалить",
-          callback: (html) => resolve(String(html.find('[name="code"]').val() ?? "") === code)
-        },
-        cancel: {
-          label: "Отмена",
-          callback: () => resolve(false)
-        }
+  const code = String(Math.floor(Math.random() * 100));
+
+  return waitDialog({
+    window: {
+      title: "Удалить игрока"
+    },
+    content: `
+      <div class="kripta-danger-note">
+        удаление игрока "${escapeHtml(player?.name ?? "")}" необратимо. введите ${escapeHtml(code)} и подтвердите удаление.
+      </div>
+      <form class="kripta-inline-form">
+        <div class="form-group">
+          <label>Код подтверждения</label>
+          <input type="text" name="code" value="">
+        </div>
+      </form>
+    `,
+    buttons: [
+      {
+        action: "confirm",
+        label: "Удалить",
+        default: true,
+        callback: (_event, button) => String(button.form?.elements?.code?.value ?? "") === code
       },
-      default: "cancel",
-      close: () => resolve(false)
-    }).render(true);
-  });
+      {
+        action: "cancel",
+        label: "Отмена",
+        callback: () => false
+      }
+    ]
+  }, false);
 }
 
 export async function countPromptDialog({ title, message, max = 1, defaultValue = 1 }) {
-  return new Promise((resolve) => {
-    new Dialog({
-      title,
-      content: `
-        <div class="kripta-danger-note">${message}</div>
-        <form class="kripta-inline-form">
-          <div class="form-group">
-            <label>Количество</label>
-            <input type="number" name="count" min="1" max="${Number(max) || 1}" value="${Number(defaultValue) || 1}">
-          </div>
-          <div class="notes">Всего карточек этого типа - ${Number(max) || 1}</div>
-        </form>
-      `,
-      buttons: {
-        confirm: {
-          label: "Подтвердить",
-          callback: (html) => resolve(Math.max(1, Math.min(Number(max) || 1, Number(html.find('[name="count"]').val() || 1))))
-        },
-        cancel: {
-          label: "Отмена",
-          callback: () => resolve(null)
+  const safeMax = Math.max(1, Number(max) || 1);
+  const safeDefault = Math.max(1, Math.min(safeMax, Number(defaultValue) || 1));
+
+  return waitDialog({
+    window: {
+      title
+    },
+    content: `
+      <div class="kripta-danger-note">${message}</div>
+      <form class="kripta-inline-form">
+        <div class="form-group">
+          <label>Количество</label>
+          <input type="number" name="count" min="1" max="${safeMax}" value="${safeDefault}">
+        </div>
+        <div class="notes">всего карточек этого типа - ${safeMax}</div>
+      </form>
+    `,
+    buttons: [
+      {
+        action: "confirm",
+        label: "Подтвердить",
+        default: true,
+        callback: (_event, button) => {
+          const rawValue = Number(button.form?.elements?.count?.value || 1);
+          return Math.max(1, Math.min(safeMax, rawValue));
         }
       },
-      default: "confirm",
-      close: () => resolve(null)
-    }).render(true);
-  });
+      {
+        action: "cancel",
+        label: "Отмена",
+        callback: () => null
+      }
+    ]
+  }, null);
 }
 
 export async function chooseBoundUserDialog(users) {
-  return new Promise((resolve) => {
-    const options = ['<option value="">-- не выбран --</option>'].concat(users.map((item) => `
+  const options = ['<option value="">-- не выбран --</option>'].concat(
+    users.map((item) => `
       <option value="${escapeHtml(item.foundryUserId)}">${escapeHtml(item.foundryUserName)}</option>
-    `)).join("");
+    `)
+  ).join("");
 
-    new Dialog({
-      title: "Выдать карточку",
-      content: `
-        <form class="kripta-inline-form">
-          <div class="form-group">
-            <label>Игрок</label>
-            <select name="foundryUserId">${options}</select>
-          </div>
-        </form>
-      `,
-      buttons: {
-        confirm: {
-          label: "Выдать",
-          callback: (html) => resolve(String(html.find('[name="foundryUserId"]').val() || ""))
-        },
-        cancel: {
-          label: "Отмена",
-          callback: () => resolve("")
-        }
+  return waitDialog({
+    window: {
+      title: "Выдать карточку"
+    },
+    content: `
+      <form class="kripta-inline-form">
+        <div class="form-group">
+          <label>Игрок</label>
+          <select name="foundryUserId">${options}</select>
+        </div>
+      </form>
+    `,
+    buttons: [
+      {
+        action: "confirm",
+        label: "Выдать",
+        default: true,
+        callback: (_event, button) => String(button.form?.elements?.foundryUserId?.value || "")
       },
-      default: "confirm",
-      close: () => resolve("")
-    }).render(true);
-  });
+      {
+        action: "cancel",
+        label: "Отмена",
+        callback: () => ""
+      }
+    ]
+  }, "");
 }
