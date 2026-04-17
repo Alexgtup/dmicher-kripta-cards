@@ -151,12 +151,18 @@ export class KriptaApiClient {
 
   static async getPlayersInfo(guids) {
     const uniqueGuids = [...new Set((Array.isArray(guids) ? guids : [guids]).filter(Boolean))];
-    return normalizePlayersInfo(
-      await this.request(ROLES.READER, "/api/PlayersCards/getPlayersInfo", {
-        method: "POST",
-        body: uniqueGuids
-      })
-    );
+
+    const raw = await this.request(ROLES.READER, "/api/PlayersCards/getPlayersInfo", {
+      method: "POST",
+      query: {
+        players: uniqueGuids
+      },
+      headers: { "Content-Type": undefined }
+    });
+
+    console.log("KRIPTA raw getPlayersInfo", raw);
+
+    return normalizePlayersInfo(raw);
   }
 
   static async addPlayer(name, comment = "") {
