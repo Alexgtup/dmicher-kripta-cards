@@ -1,16 +1,23 @@
 import { KriptaApiClient } from "../api/client.js";
 import { MODULE_ID, TEMPLATE_ROOT } from "../constants.js";
 import { createCardRequestMessage } from "../helpers/chat.js";
-import { notifyError, notifyInfo } from "../helpers/utils.js";
+import { getBinding, notifyInfo } from "../helpers/utils.js";
 
 export class KriptaRequestCardDialog extends FormApplication {
   constructor(options = {}) {
     super(options);
-    this.playerGuid = options.playerGuid;
+
+    this.playerGuid = options.playerGuid ?? "";
     this.ownerFoundryUserId = options.ownerFoundryUserId ?? game.user.id;
+
     this.initialLevel = options.initialLevel ?? null;
     this.initialNumber = options.initialNumber ?? null;
+
+    this.selectedLevel = options.initialLevel ?? null;
+    this.selectedNumber = options.initialNumber ?? null;
+
     this.mode = this.initialLevel !== null && this.initialNumber !== null ? "manual" : "random";
+
     this.levels = [];
     this.cards = [];
   }
@@ -29,13 +36,28 @@ export class KriptaRequestCardDialog extends FormApplication {
 
   async getData() {
     this.levels = await KriptaApiClient.getLevelsList();
-    const selectedLevel = this.initialLevel ?? this.levels[0]?.id ?? 0;
-    if (this.mode === "manual") this.cards = await KriptaApiClient.getCardsList(selectedLevel, "");
+
+    if (this.selectedLevel === null || this.selectedLevel === undefined) {
+      this.selectedLevel = this.levels[0]?.id ?? 0;
+    }
+
+    if (this.mode === "manual") {
+      this.cards = await KriptaApiClient.getCardsList(this.selectedLevel, "");
+      if (
+        (this.selectedNumber === null || this.selectedNumber === undefined || this.selectedNumber === "") &&
+        this.cards.length
+      ) {
+        this.selectedNumber = this.cards[0].number;
+      }
+    } else {
+      this.cards = [];
+    }
+
     return {
       levels: this.levels,
       cards: this.cards,
-      selectedLevel,
-      selectedNumber: this.initialNumber ?? this.cards[0]?.number ?? "",
+      selectedLevel: this.selectedLevel,
+      selectedNumber: this.selectedNumber ?? "",
       isManual: this.mode === "manual"
     };
   }
@@ -44,21 +66,34 @@ export class KriptaRequestCardDialog extends FormApplication {
     super.activateListeners(html);
 
     html.find('[name="mode"]').on("change", async (event) => {
-      this.mode = event.currentTarget.value;
+      this.mode = String(event.currentTarget.value);
+
+      const levelFromForm = Number(html.find('[name="level"]').val());
+      if (!Number.isNaN(levelFromForm)) this.selectedLevel = levelFromForm;
+
       if (this.mode === "manual") {
-        const selectedLevel = Number(html.find('[name="level"]').val());
-        this.cards = await KriptaApiClient.getCardsList(selectedLevel, "");
+        this.cards = await KriptaApiClient.getCardsList(this.selectedLevel, "");
+        this.selectedNumber = this.cards[0]?.number ?? null;
       } else {
         this.cards = [];
+        this.selectedNumber = null;
       }
+
       this.render();
     });
 
     html.find('[name="level"]').on("change", async (event) => {
-      if (this.mode !== "manual") return;
-      const level = Number(event.currentTarget.value);
-      this.cards = await KriptaApiClient.getCardsList(level, "");
-      this.render();
+      this.selectedLevel = Number(event.currentTarget.value);
+
+      if (this.mode === "manual") {
+        this.cards = await KriptaApiClient.getCardsList(this.selectedLevel, "");
+        this.selectedNumber = this.cards[0]?.number ?? null;
+        this.render();
+      }
+    });
+
+    html.find('[name="cardNumber"]').on("change", (event) => {
+      this.selectedNumber = Number(event.currentTarget.value);
     });
   }
 
@@ -67,63 +102,48 @@ export class KriptaRequestCardDialog extends FormApplication {
 
     const selectedLevel = Number(
       data.level ??
-      data.category ??
-      this.level ??
       this.selectedLevel ??
+      this.initialLevel ??
       0
     );
 
     const mode = String(
       data.mode ??
-      data.requestMode ??
+      this.mode ??
       "random"
     );
 
-    let playerGuid =
-      this.options.playerGuid ??
-      this.playerGuid ??
-      "00000000-0000-0000-0000-000000000000";
+    let playerGuid = this.playerGuid;
+    const ownerFoundryUserId = this.ownerFoundryUserId ?? game.user.id;
 
-    const ownerFoundryUserId =
-      this.options.ownerFoundryUserId ??
-      this.ownerFoundryUserId ??
-      game.user.id;
-
-    if (!playerGuid || playerGuid === "00000000-0000-0000-0000-000000000000") {
-      const bindings = game.settings.get("dmicher-kripta-cards", "playerBindings") ?? {};
-      playerGuid =
-        bindings?.[ownerFoundryUserId]?.guid ??
-        bindings?.[ownerFoundryUserId]?.playerGuid ??
-        "00000000-0000-0000-0000-000000000000";
+    if (!playerGuid) {
+      const binding = getBinding(ownerFoundryUserId);
+      playerGuid = binding?.guid ?? binding?.playerGuid ?? "";
     }
 
     let chosenCard = null;
 
-    if (mode === "choice") {
-      const selectedCardValue = String(
-        data.card ??
-        data.number ??
-        data.selectedCard ??
-        ""
-      ).trim();
+    if (mode === "manual") {
+      const selectedNumber = Number(
+        data.cardNumber ??
+        this.selectedNumber ??
+        this.initialNumber ??
+        0
+      );
 
-      const cards = await KriptaApiClient.getCardsList(selectedLevel, "");
-
-      chosenCard =
-        cards.find((c) => String(c.number) === selectedCardValue) ||
-        cards.find((c) => c.name === selectedCardValue) ||
-        cards.find((c) => `${c.level}:${c.number}` === selectedCardValue) ||
-        null;
-
-      if (!chosenCard) {
-        return ui.notifications.warn("Не удалось определить выбранную карточку.");
+      if (!selectedNumber) {
+        ui.notifications.warn("Не удалось определить выбранную карточку.");
+        return;
       }
+
+      chosenCard = await KriptaApiClient.getCardMeta(selectedLevel, selectedNumber);
     } else {
       chosenCard = await KriptaApiClient.rollCard(selectedLevel);
     }
 
     if (!chosenCard) {
-      return ui.notifications.warn("Не удалось получить карточку.");
+      ui.notifications.warn("Не удалось получить карточку.");
+      return;
     }
 
     let imageUrl = "";
@@ -140,7 +160,7 @@ export class KriptaRequestCardDialog extends FormApplication {
       level: chosenCard.level,
       number: chosenCard.number,
       playerName: game.users.get(ownerFoundryUserId)?.name ?? game.user.name,
-      title: mode === "choice"
+      title: mode === "manual"
         ? `Выбрана карта: ${chosenCard.name}`
         : `Случайная карта: ${chosenCard.name}`,
       levelName: chosenCard.levelName ?? "",
@@ -149,6 +169,6 @@ export class KriptaRequestCardDialog extends FormApplication {
       speakerUser: game.user
     });
 
-    ui.notifications.info("Запрос карточки отправлен в чат.");
+    notifyInfo("Запрос карточки отправлен в чат.");
   }
 }
