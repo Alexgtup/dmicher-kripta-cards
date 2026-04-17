@@ -1,6 +1,13 @@
 import { ROLES } from "../constants.js";
 import { getServerUrl, getTechUsers, objectWithoutUndefined } from "../helpers/utils.js";
-import { normalizeCardMeta, normalizeCardsList, normalizeLevels, normalizePlayersInfo, normalizePlayersList, normalizeRollCard } from "./normalizers.js";
+import {
+  normalizeCardMeta,
+  normalizeCardsList,
+  normalizeLevels,
+  normalizePlayersInfo,
+  normalizePlayersList,
+  normalizeRollCard
+} from "./normalizers.js";
 
 export class KriptaApiClient {
   static buildHeaders(role, extra = {}, { useAuth = true } = {}) {
@@ -33,6 +40,7 @@ export class KriptaApiClient {
   static buildUrl(path, query = null) {
     const base = getServerUrl();
     const url = new URL(path, `${base}/`);
+
     if (query) {
       for (const [key, value] of Object.entries(query)) {
         if (value === undefined || value === null || value === "") continue;
@@ -40,6 +48,7 @@ export class KriptaApiClient {
         else url.searchParams.set(key, value);
       }
     }
+
     return url.toString();
   }
 
@@ -154,10 +163,9 @@ export class KriptaApiClient {
 
     const raw = await this.request(ROLES.READER, "/api/PlayersCards/getPlayersInfo", {
       method: "POST",
-      query: {
+      body: {
         players: uniqueGuids
-      },
-      headers: { "Content-Type": undefined }
+      }
     });
 
     console.log("KRIPTA raw getPlayersInfo", raw);
@@ -236,7 +244,7 @@ export class KriptaApiClient {
       Guid: playerGuid,
       id: playerGuid,
       Id: playerGuid,
-      playerGuid: playerGuid,
+      playerGuid,
       PlayerGuid: playerGuid,
       level,
       Level: level,
@@ -265,7 +273,7 @@ export class KriptaApiClient {
       Guid: playerGuid,
       id: playerGuid,
       Id: playerGuid,
-      playerGuid: playerGuid,
+      playerGuid,
       PlayerGuid: playerGuid,
       level,
       Level: level,
