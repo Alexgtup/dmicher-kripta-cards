@@ -191,7 +191,7 @@ export class KriptaApiClient {
       }
     });
 
-    console.log("KRIPTA raw getPlayersInfo", raw);
+    console.log("KRIPTA RAW getPlayersInfo JSON", JSON.stringify(raw, null, 2));
 
     return normalizePlayersInfo(raw);
   }
