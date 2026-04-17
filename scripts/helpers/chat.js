@@ -67,7 +67,14 @@ export async function createCardRequestMessage({
   description,
   speakerUser = game.user
 }) {
-  const payload = { playerGuid, ownerFoundryUserId, level, number };
+  const payload = {
+    playerGuid,
+    ownerFoundryUserId,
+    playerName,
+    level,
+    number
+  };
+
   const buttonsHtml = [
     createActionButtonHtml(CHAT_ACTIONS.REQUEST_CARD, "confirm", "Подтвердить", payload, "is-confirm"),
     createActionButtonHtml(CHAT_ACTIONS.REQUEST_CARD, "cancel", "Отменить", payload, "is-cancel")
@@ -82,8 +89,7 @@ export async function createCardRequestMessage({
     buttonsHtml,
     flags: {
       type: CHAT_ACTIONS.REQUEST_CARD,
-      payload,
-      playerName
+      payload
     }
   });
 }
